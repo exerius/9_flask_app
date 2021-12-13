@@ -33,7 +33,7 @@ def do_POST(nickname):
 
 
 @app.route('/user/<nickname>', methods=["DELETE"])
-def do_POST(nickname):
+def do_DELETE(nickname):
     data = open_db()
     data.pop(nickname)
     update_db(data)
