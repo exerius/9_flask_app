@@ -34,7 +34,6 @@ def do_POST(nickname):
     content = flask.request.get_json()
     data = open_db()
     data.update({nickname: [content["password"], datetime.now().strftime('%d/%m/%y')]})
-   # content["password"] = sha256(content["password"].encode()).hexdigest()
     update_db(data)
     resp = flask.jsonify(success=True)
     return resp
