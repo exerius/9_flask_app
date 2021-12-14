@@ -1,20 +1,26 @@
 import flask
 from flask import Flask
 from hashlib import sha256
+from datetime import datetime
+from os import remove
+from pickle import dump, load
 app = Flask(__name__)
 
 
 def open_db():
-    with open("db.txt", "r") as file:
-        data = {i.split(":")[0]: i.split(":")[1:] for i in file}
+    try:
+        with open("db.txt", "rb") as file:
+            content = load(file)
+        data = {i.split(":")[0]: i.split(":")[1:] for i in content}
+    except: data = {}
     return data
 
 
 def update_db(text):
-    with open("db.txt", "w") as file:
-        for i in text:
-            line = i+":"+":".join(text[i])
-            file.write(line)
+    remove("db.txt")
+    content = ["%s:%s:%s" % (i, sha256(text[i][0].encode()).hexdigest(), text[i][1]) for i in text]
+    with open("db.txt", "wb") as file:
+        dump(content, file)
 
 
 @app.route('/user/<nickname>', methods=['GET'])
@@ -25,11 +31,13 @@ def do_GET(nickname):
 
 @app.route('/user/<nickname>', methods=["POST", "PUT"])
 def do_POST(nickname):
+    content = flask.request.get_json()
     data = open_db()
-    content = flask.request.json
-    content["password"] = sha256(content["password"].encode()).hexdigest()
-    data.update(content)
+    data.update({nickname: [content["password"], datetime.now().strftime('%d/%m/%y')]})
+   # content["password"] = sha256(content["password"].encode()).hexdigest()
     update_db(data)
+    resp = flask.jsonify(success=True)
+    return resp
 
 
 @app.route('/user/<nickname>', methods=["DELETE"])
@@ -37,7 +45,7 @@ def do_DELETE(nickname):
     data = open_db()
     data.pop(nickname)
     update_db(data)
-
+    return flask.jsonify(success=True)
 
 
 if __name__ == '__main__':
